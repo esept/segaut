@@ -1,20 +1,15 @@
-import cv2
+# import cv2
 import segaut as sa
 import numpy as np
 
-WHITE = (255,255,255)
-GREEN = (0,255,0)
-YELLOW = (0,255,255)
-RED = (0,0,255)
-BLUE = (255,0,0)
-GOLD = (0,215,255)
 
 class Visualizer:
     def __init__(self,dest_path,sat = None):
-        print("I'm watching ..")
+        # print("I'm watching ..")
         self.dst = dest_path
         self.sat = sat if sat else sa.Tool(defaut_path)
         self.saa = sa.Augmentor(self.dst,self.sat)
+
 
     def __vis_seg_label(self,label,image_path):
         seglabel = label.split(" ")[1:]
@@ -29,7 +24,7 @@ class Visualizer:
         return src_img
 
 
-    def __vis_det_label(self,label,image_path):
+    def __vis_det_label(self,label:str,image_path:str):
         det_label = label.split(" ")[1:]
         detlabel = [float(i) for i in det_label]
         src_img = cv2.imread(image_path)
@@ -45,9 +40,6 @@ class Visualizer:
         cv2.rectangle(src_img,(int(min_w_r),int(min_h_r)),(int(max_w_r),int(max_h_r)),(0,255,255),3)
         return src_img
 
-
-
-    
     def show_label(self,labels_path,img_path,Task = "seg"):
         this_dst = self.dst + "show_label_" + Task + "/"
         self.sat.verify_folder(this_dst)
@@ -62,11 +54,12 @@ class Visualizer:
                 fin_img = self.__vis_seg_label(this_label[0],image_name)
             else :
                 fin_img = self.__vis_det_label(this_label[0],image_name)
-            # elif Task == "point":
-            #     fin_img = self.__draw_points(this_label[0],image_name)
             info = self.saa.save_img(fin_img, "show_label_" + name , this_dst)
             self.sat.show_pgbar(pp,f"{info:72}")
-    
+        return "Saved in" + this_dst + " with " + str(length) + " images."
+
+
+
     def __draw_points(self,image_path,label):
         seglabel = label.split(" ")[1:]
         src_img = cv2.imread(image_path)

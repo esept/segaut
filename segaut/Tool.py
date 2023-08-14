@@ -8,7 +8,6 @@ from tqdm.auto import tqdm
 
 '''
 工具类
-
 '''
 
 class Tool:
@@ -18,6 +17,7 @@ class Tool:
         print("This is " + self.__author)
 
     def catch_ext_file(self,path,ext):
+        # print(path,ext)
         return glob.glob(path + "*." + ext)
 
     def __remove_ele(self,folder_path):
@@ -50,6 +50,7 @@ class Tool:
         '''
         get a random integer value from vmin to vmax 
         '''
+        # print(vmin,vmax)
         return random.randint(vmin,vmax)
 
     def write_file(self,file_name,content,mode = "w"):
@@ -87,7 +88,7 @@ class Tool:
         print("COPY_TO_FILES DONE " + str(num))
 
 
-    def copy_file_by_name(self,ori_path,src_path,ori_ext,dst_ext):
+    def copy_file_by_name(self,ori_path,src_path,ori_ext,dst_ext,stviz = None):
         '''
         copy everything in ori_path end with ext and paste to dest_path
         '''
@@ -95,15 +96,22 @@ class Tool:
         self.verify_folder(this_dest)
         num = 0
         llist = glob.glob(ori_path + "*." + ori_ext)
+        total_length = len(llist)
         pbar = self.create_pgbar(len(llist))
-        for i in llist:
-            num += 1
-            # print(i)
-            name = i.split("/")[-1].split(".")[0]
-            # 添加进度条 ？
+        if stviz :
+            stbar = stviz.create_st_pbar("Move Image")
+        for i in range(total_length):
+            name = llist[i].split("/")[-1].split(".")[0]
             self.show_pgbar(pbar,f"{name:30}")
             shutil.copy(src_path + name + "." + dst_ext,this_dest)
-        print("COPY_TO_FILES DONE " + str(num))
+            if stviz :
+                stviz.update_st_pbar(stbar,name,i/total_length)
+        info = "COPY_TO_FILES DONE " + str(total_length)
+        print(info)
+        if stviz:
+            stviz.update_st_pbar(stbar,info,(i+1)/total_length,"red")
+
+
 
 
     def process_list_in_two(self,ori_list,add_op_1,add_op_2,add_op_3 = None):

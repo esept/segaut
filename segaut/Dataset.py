@@ -1,5 +1,3 @@
-# from .Tool import *
-# from .Visualizer import *
 import segaut as sa
 import os
 class Dataset:
@@ -27,20 +25,23 @@ class Dataset:
             if i["id"] == this_id:
                 return i
 
-    def load_json(self,json_path,store_folder = "yolo_label/"):
+    def load_json(self,json_path,store_folder = "yolo_label/",stviz = None):
         this_dest = os.path.join(self.dest + store_folder)
-        print(this_dest)
+        # print(this_dest)
         self.sat.verify_folder(this_dest)
         data = self.sat.read_file(json_path)
         seg_info = data["annotations"]
         img_info = data["images"]
         cate_info = data["categories"]
         self.write_categories(cate_info)
-        pbar = self.sat.create_pgbar(len(seg_info))
-        for i in seg_info:
-            seg = i["segmentation"][0]
-            seg_img_id = i["image_id"]
-            cate = i["category_id"]
+        total_length = len(seg_info)
+        pbar = self.sat.create_pgbar(total_length)
+        if stviz :
+            stbar = stviz.create_st_pbar("Reading JSON")
+        for i in range(total_length):
+            seg = seg_info[i]["segmentation"][0]
+            seg_img_id = seg_info[i]["image_id"]
+            cate = seg_info[i]["category_id"]
             this_img_info = self.search_img_info(img_info,seg_img_id)
             new_seg = self.sat.process_list_in_two(seg,
                 lambda x:str(int(x)/int(this_img_info["width"])),
@@ -49,6 +50,11 @@ class Dataset:
             txt_name = this_img_info["file_name"].split(".")[0]
             content = str(cate) + " " + " ".join(new_seg)
             info = self.sat.write_file(this_dest + txt_name + ".txt",content,"a+")
+            if stviz:
+                stviz.update_st_pbar(stbar,info,i/total_length)
             self.sat.show_pgbar(pbar,f"{info:30}")
+        info = "Generate " + str(total_length) + " txt file from json"
+        if stviz :
+            stviz.update_st_pbar(stbar,info,(i+1)/total_length,"red")
 
 

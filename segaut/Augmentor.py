@@ -84,17 +84,20 @@ class Augmentor:
         return area_cut,area_str
 
 
-    def cut(self,img_path,label_path):
+    def cut(self,img_path,label_path,stviz = None):
         '''
         main function for cut 
         '''
         this_dst = self.dest + "cutted/"
         self.sat.verify_folder(this_dst)
         img_file = self.sat.catch_ext_file(img_path,"jpg")
-        pbar = self.sat.create_pgbar(len(img_file))
-        for i in img_file:
-            img = cv2.imread(i)
-            name = i.split("/")[-1].split(".")[0]
+        total_length = len(img_file)
+        pbar = self.sat.create_pgbar(total_length)
+        if stviz:
+            stbar = stviz.create_st_pbar("Cut image by label")
+        for i in range(total_length):
+            img = cv2.imread(img_file[i])
+            name = img_file[i].split("/")[-1].split(".")[0]
             # print("cutting " + name)
             w,h = img.shape[:2]
             labels = self.sat.read_file(label_path + name + ".txt")
@@ -103,7 +106,11 @@ class Augmentor:
                 cate = j.split(" ")[0]
                 res,area = self.__cut_with_label(img,j)
                 fin = self.noir_2_transparent(res)
-                self.save_img(fin,cate + "_" + name +"_"+ "_".join(area),this_dst,".png")
+                info = self.save_img(fin,cate + "_" + name +"_"+ "_".join(area),this_dst,".png")
+            if stviz:
+                stviz.update_st_pbar(stbar,info,i/total_length)
+        if stviz:
+            stviz.update_st_pbar(stbar,"cutted " + str(total_length) + " images",(i+1)/total_length)
             #     break
             # break
 
@@ -153,7 +160,7 @@ class Augmentor:
         rand_pos_h = self.sat.get_random_int(0,src_h)
         rand_pos_w = self.sat.get_random_int(0,src_w)
         src_b = self.get_binary_img(src,0)
-        obj_b = self.get_binary_img(obj,255)
+        obj_b = self.get_binary_img(obj)
         if rand_pos_w + obj_w > src_w :
             rand_pos_w = src_w - obj_w
         if rand_pos_h + obj_h > src_h:
@@ -170,7 +177,7 @@ class Augmentor:
     #     return [area[3] + area[1]/2,area[2] + area[0]/2,area[1],area[0]]
 
 
-    def __preprocess_merge(self,obj_img,src_img):
+    def preprocess_merge(self,obj_img,src_img):
         obj = cv2.imread(obj_img,cv2.IMREAD_UNCHANGED)
         src = cv2.imread(src_img)
         src = cv2.cvtColor(src,cv2.COLOR_BGR2BGRA)
@@ -189,8 +196,9 @@ class Augmentor:
         return [merged[1],label_pos,det]
 
 
-    def merge(self,cutted_path,paste_path,nbs = 100):
+    def merge(self,cutted_path,paste_path,nbs = 100,stviz = None):
         this_dst = os.path.join(self.dest,"merged_")
+        print(cutted_path,paste_path,nbs)
         cclist = self.sat.catch_ext_file(cutted_path,"png")
         pplist = self.sat.catch_ext_file(paste_path,"jpg")
         self.sat.verify_folder(this_dst)
@@ -198,17 +206,25 @@ class Augmentor:
         self.sat.verify_folder(this_dst + "det/")
         self.sat.verify_folder(this_dst+"imgs/")
         pp = self.sat.create_pgbar(nbs)
+        if stviz:
+            stbar = stviz.create_st_pbar("Merge new Image")
         for nb in range(nbs):
             random_cut = self.sat.get_random_int(0,len(cclist) - 1)
             random_paste = self.sat.get_random_int(0,len(pplist) - 1)
-            merged = self.__preprocess_merge(cclist[random_cut],pplist[random_paste])
+            merged = self.preprocess_merge(cclist[random_cut],pplist[random_paste])
             nums = [random_cut,random_paste,nb]
             nums = [str(i) for i in nums]
             self.save_img(merged[0], "merged_"+"_".join(nums), this_dst+"imgs/")
             info = self.sat.write_file(this_dst + "seg/"+ "merged_" + "_".join(nums) + ".txt",merged[1])
             self.sat.write_file(this_dst + "det/"+ "merged_" + "_".join(nums) + ".txt",merged[2])
             self.sat.show_pgbar(pp,info)
-            # break
+            if stviz:
+                stviz.update_st_pbar(stbar,info,nb/nbs)
+        stviz.update_st_pbar(stbar,
+        "Merged " + str(nbs) +" new image"
+        , (nb+1) / nbs)
+        return "Saved in" + this_dst + "imgs/ with " + str(nbs) + " images."
+
 
 
 
