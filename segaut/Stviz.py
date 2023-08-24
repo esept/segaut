@@ -51,7 +51,7 @@ class Stviz(sa.Augmentor):
         st.markdown("A tool for image segmentation and detection")
         st.markdown("Created by Hsu")
 
-    @overwrite
+    # @overwrite
     def merge(self,cutted_path,paste_path,nbs = 100):
         this_dst = os.path.join(self.sa.dst,"merged_")
         cclist = self.sa.sat.catch_ext_file(cutted_path,"png")
